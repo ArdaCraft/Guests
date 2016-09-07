@@ -45,7 +45,6 @@ public class Guests
     @Listener (order = Order.LAST)
     public void worldLoad(LoadWorldEvent event)
     {
-        // make worlds configurable
         if (event.getTargetWorld().getName().equalsIgnoreCase("arda"))
         {
             worlds.add(event.getTargetWorld().getUniqueId());
@@ -80,8 +79,9 @@ public class Guests
     public void onBlockInteractSec(InteractBlockEvent.Secondary event, @Root Player player)
     {
         BlockSnapshot block = event.getTargetBlock();
-        if (block.supports(Keys.HINGE_POSITION) && block.supports(Keys.OPEN) && player.hasPermission(interactOpenable))
+        if (block.supports(Keys.OPEN) && (block.supports(Keys.HINGE_POSITION) || block.supports(Keys.IN_WALL)) && player.hasPermission(interactOpenable))
         {
+            // allow player to interact with doors and fence-gates
             return;
         }
         test(player, build, event);
