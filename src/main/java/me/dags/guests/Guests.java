@@ -9,12 +9,17 @@ import org.spongepowered.api.event.Order;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
+import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
+import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.World;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +32,7 @@ import java.util.UUID;
 @Plugin(name = "Guests", id = "guests", version = "1.1")
 public class Guests
 {
+    private static final String world = "guests.world.";
     private static final String build = "guests.build.place";
     private static final String destroy = "guests.build.destroy";
     private static final String spawn = "guests.entity.spawn";
@@ -48,6 +54,18 @@ public class Guests
         if (event.getTargetWorld().getName().equalsIgnoreCase("arda"))
         {
             worlds.add(event.getTargetWorld().getUniqueId());
+        }
+    }
+
+    @Listener(order = Order.PRE)
+    public void onTp(MoveEntityEvent.Teleport event, @First Player player)
+    {
+        World to = event.getToTransform().getExtent();
+        if (!player.hasPermission(world + to.getName().toLowerCase()))
+        {
+            event.setCancelled(true);
+            player.setTransform(event.getFromTransform());
+            player.sendMessage(Text.of("You do not have permission to enter that world", TextColors.RED));
         }
     }
 
