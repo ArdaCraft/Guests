@@ -1,7 +1,7 @@
 package me.dags.guests;
 
-import org.spongepowered.api.block.BlockSnapshot;
-import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.trait.BlockTrait;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Cancellable;
 import org.spongepowered.api.event.Listener;
@@ -11,6 +11,7 @@ import org.spongepowered.api.event.block.InteractBlockEvent;
 import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
+import org.spongepowered.api.event.entity.projectile.LaunchProjectileEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
@@ -24,6 +25,7 @@ import org.spongepowered.api.world.World;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * @author dags <dags@dags.me>
@@ -36,9 +38,22 @@ public class Guests
     private static final String build = "guests.build.place";
     private static final String destroy = "guests.build.destroy";
     private static final String spawn = "guests.entity.spawn";
+    private static final String launch = "guests.entity.launch";
     private static final String inventoryModify = "guests.inventory.modify";
     private static final String interactEntity = "guests.interact.entity";
     private static final String interactOpenable = "guests.interact.openable";
+
+    // this sucks ass, but CR blocks don't inherit normal block traits like Keys.OPEN :/
+    private static Predicate<BlockState> openable = blockState -> {
+        boolean open = false, hinge = false, inWall = false;
+        for (BlockTrait trait : blockState.getTraits()) {
+            String id = trait.getName();
+            open = open || id.equals("open");
+            hinge = hinge || id.equals("hinge");
+            inWall = inWall || id.equals("in_wall");
+        }
+        return open && (hinge || inWall);
+    };
 
     private final Set<UUID> worlds = new HashSet<>();
 
@@ -70,13 +85,19 @@ public class Guests
     }
 
     @Listener (order = Order.LAST)
-    public void changeInventory(ChangeInventoryEvent event, @Root Player player)
+    public void changeInventory(ChangeInventoryEvent.Transfer event, @Root Player player)
     {
         test(player, inventoryModify, event);
     }
 
     @Listener (order = Order.LAST)
-    public void spawn(SpawnEntityEvent event, @Root Player player)
+    public void launch(LaunchProjectileEvent event, @First Player player)
+    {
+        test(player, launch, event);
+    }
+
+    @Listener (order = Order.LAST)
+    public void spawn(SpawnEntityEvent event, @First Player player)
     {
         test(player, spawn, event);
     }
@@ -96,13 +117,15 @@ public class Guests
     @Listener (order = Order.LAST)
     public void onBlockInteractSec(InteractBlockEvent.Secondary event, @Root Player player)
     {
-        BlockSnapshot block = event.getTargetBlock();
-        if (block.supports(Keys.OPEN) && (block.supports(Keys.HINGE_POSITION) || block.supports(Keys.IN_WALL)) && player.hasPermission(interactOpenable))
-        {
-            // allow player to interact with doors and fence-gates
-            return;
+        BlockState block = event.getTargetBlock().getState();
+        if (worlds.contains(player.getWorld().getUniqueId())) {
+            if (player.hasPermission(build) || player.hasPermission(interactOpenable) && openable.test(block))
+            {
+                // allow player to interact with doors and fence-gates
+                return;
+            }
+            event.setCancelled(true);
         }
-        test(player, build, event);
     }
 
     @Listener (order = Order.LAST)
