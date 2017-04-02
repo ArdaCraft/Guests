@@ -1,5 +1,6 @@
 package me.dags.guests;
 
+import com.google.common.collect.Sets;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.trait.BlockTrait;
 import org.spongepowered.api.entity.living.player.Player;
@@ -31,7 +32,7 @@ import java.util.function.Predicate;
  * @author dags <dags@dags.me>
  */
 
-@Plugin(name = "Guests", id = "guests", version = "1.1")
+@Plugin(name = "Guests", id = "guests", version = "1.2.1")
 public class Guests
 {
     private static final String world = "guests.world.";
@@ -55,7 +56,8 @@ public class Guests
         return open && (hinge || inWall);
     };
 
-    private final Set<UUID> worlds = new HashSet<>();
+    private final Set<String> whitelist = Sets.newHashSet("plots");
+    private final Set<UUID> protectedWorlds = new HashSet<>();
 
     @Listener
     public void init(GameInitializationEvent event)
@@ -66,19 +68,18 @@ public class Guests
     @Listener (order = Order.LAST)
     public void worldLoad(LoadWorldEvent event)
     {
-        if (event.getTargetWorld().getName().equalsIgnoreCase("arda"))
+        if (!whitelist.contains(event.getTargetWorld().getName().toLowerCase()))
         {
-            worlds.add(event.getTargetWorld().getUniqueId());
+            protectedWorlds.add(event.getTargetWorld().getUniqueId());
         }
     }
 
-    @Listener(order = Order.PRE)
+    @Listener(order = Order.POST)
     public void onTp(MoveEntityEvent.Teleport event, @First Player player)
     {
         World to = event.getToTransform().getExtent();
         if (!player.hasPermission(world + to.getName().toLowerCase()))
         {
-            event.setCancelled(true);
             player.setTransform(event.getFromTransform());
             player.sendMessage(Text.of("You do not have permission to enter that world", TextColors.RED));
         }
@@ -118,7 +119,7 @@ public class Guests
     public void onBlockInteractSec(InteractBlockEvent.Secondary event, @Root Player player)
     {
         BlockState block = event.getTargetBlock().getState();
-        if (worlds.contains(player.getWorld().getUniqueId())) {
+        if (protectedWorlds.contains(player.getWorld().getUniqueId())) {
             if (player.hasPermission(build) || player.hasPermission(interactOpenable) && openable.test(block))
             {
                 // allow player to interact with doors and fence-gates
@@ -142,7 +143,7 @@ public class Guests
 
     private void test(Player player, String permission, Cancellable event)
     {
-        if (worlds.contains(player.getWorld().getUniqueId()) && !player.hasPermission(permission))
+        if (protectedWorlds.contains(player.getWorld().getUniqueId()) && !player.hasPermission(permission))
         {
             event.setCancelled(true);
         }
