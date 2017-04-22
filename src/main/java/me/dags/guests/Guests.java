@@ -77,12 +77,19 @@ public class Guests
     }
 
     @Listener(order = Order.POST)
-    public void onTp(MoveEntityEvent.Teleport event, @Getter("getTargetEntity") Player player)
+    public void onTp(MoveEntityEvent.Teleport event)
     {
+        if (!(event.getTargetEntity() instanceof Player))
+        {
+            return;
+        }
+
+        Player player = (Player) event.getTargetEntity();
         World to = event.getToTransform().getExtent();
+
         if (!player.hasPermission(world + to.getName().toLowerCase()))
         {
-            player.setTransform(event.getFromTransform());
+            event.setCancelled(true);
             player.sendMessage(Text.of("You do not have permission to enter that world", TextColors.RED));
         }
     }
