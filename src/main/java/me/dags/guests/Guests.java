@@ -13,6 +13,7 @@ import org.spongepowered.api.event.entity.InteractEntityEvent;
 import org.spongepowered.api.event.entity.MoveEntityEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.entity.projectile.LaunchProjectileEvent;
+import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.filter.cause.Root;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
@@ -21,6 +22,7 @@ import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.world.Chunk;
 import org.spongepowered.api.world.World;
 
 import java.util.HashSet;
@@ -75,7 +77,7 @@ public class Guests
     }
 
     @Listener(order = Order.POST)
-    public void onTp(MoveEntityEvent.Teleport event, @First Player player)
+    public void onTp(MoveEntityEvent.Teleport event, @Getter("getTargetEntity") Player player)
     {
         World to = event.getToTransform().getExtent();
         if (!player.hasPermission(world + to.getName().toLowerCase()))
