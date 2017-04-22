@@ -34,7 +34,7 @@ import java.util.function.Predicate;
  * @author dags <dags@dags.me>
  */
 
-@Plugin(name = "Guests", id = "guests", version = "1.2.1")
+@Plugin(name = "Guests", id = "guests", version = "1.2.3")
 public class Guests
 {
     private static final String world = "guests.world.";
