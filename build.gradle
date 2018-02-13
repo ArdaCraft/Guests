@@ -18,13 +18,13 @@ repositories {
         url 'http://repo.spongepowered.org/maven'
     }
     maven {
-        url 'https://jitpack.io'
+        url 'https://repo.dags.me/nexus/content/repositories/snapshots'
     }
 }
 
 dependencies {
     compileOnly "org.spongepowered:spongeapi:${spongeAPI}-$spongeChannel"
-    compile ('com.github.dags-:Config:1.0') {
+    compile ('me.dags:Config:1.0-SNAPSHOT') {
         transitive = false
     }
 }
