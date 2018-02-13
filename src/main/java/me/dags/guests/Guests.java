@@ -1,160 +1,88 @@
 package me.dags.guests;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import me.dags.config.Config;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.trait.BlockTrait;
-import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.event.Cancellable;
+import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.Order;
-import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.event.block.InteractBlockEvent;
-import org.spongepowered.api.event.entity.InteractEntityEvent;
-import org.spongepowered.api.event.entity.MoveEntityEvent;
-import org.spongepowered.api.event.entity.SpawnEntityEvent;
-import org.spongepowered.api.event.entity.projectile.LaunchProjectileEvent;
-import org.spongepowered.api.event.filter.Getter;
-import org.spongepowered.api.event.filter.cause.First;
-import org.spongepowered.api.event.filter.cause.Root;
+import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
-import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
-import org.spongepowered.api.event.world.LoadWorldEvent;
 import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.format.TextColors;
-import org.spongepowered.api.world.Chunk;
-import org.spongepowered.api.world.World;
+import org.spongepowered.api.scheduler.Task;
 
-import java.util.HashSet;
+import javax.inject.Inject;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
  * @author dags <dags@dags.me>
  */
+@Plugin(name = "Guests", id = "guests", version = "2.0.0", description = "sh")
+public class Guests {
 
-@Plugin(name = "Guests", id = "guests", version = "1.2.3")
-public class Guests
-{
-    private static final String world = "guests.world.";
-    private static final String build = "guests.build.place";
-    private static final String destroy = "guests.build.destroy";
-    private static final String spawn = "guests.entity.spawn";
-    private static final String launch = "guests.entity.launch";
-    private static final String inventoryModify = "guests.inventory.modify";
-    private static final String interactEntity = "guests.interact.entity";
-    private static final String interactOpenable = "guests.interact.openable";
+    private static Handler handler = new Handler();
 
-    // this sucks ass, but CR blocks don't inherit normal block traits like Keys.OPEN :/
-    private static Predicate<BlockState> openable = blockState -> {
-        boolean open = false, hinge = false, inWall = false;
-        for (BlockTrait trait : blockState.getTraits()) {
-            String id = trait.getName();
-            open = open || id.equals("open");
-            hinge = hinge || id.equals("hinge");
-            inWall = inWall || id.equals("in_wall");
-        }
-        return open && (hinge || inWall);
-    };
+    private final Path config;
 
-    private final Set<String> whitelist = Sets.newHashSet("plots");
-    private final Set<UUID> protectedWorlds = new HashSet<>();
+    @Inject
+    public Guests(@ConfigDir(sharedRoot = false) Path path) {
+        config = path.resolve("config.conf");
+    }
 
     @Listener
-    public void init(GameInitializationEvent event)
-    {
-        // load config
+    public void init(GameInitializationEvent event) {
+        reload(null);
     }
 
-    @Listener (order = Order.LAST)
-    public void worldLoad(LoadWorldEvent event)
-    {
-        if (!whitelist.contains(event.getTargetWorld().getName().toLowerCase()))
-        {
-            protectedWorlds.add(event.getTargetWorld().getUniqueId());
-        }
+    @Listener
+    public void reload(GameReloadEvent event) {
+        Object plugin = this;
+        Predicate<BlockState> openable = findOpenableStates();
+        Task.builder().async().execute(() -> {
+            Handler listener = reloadHandler(config, openable);
+            Task.builder().execute(() -> {
+                Sponge.getEventManager().unregisterListeners(handler);
+                Sponge.getEventManager().registerListeners(plugin, handler);
+                handler = listener;
+            });
+        });
     }
 
-    @Listener(order = Order.POST)
-    public void onTp(MoveEntityEvent.Teleport event)
-    {
-        if (!(event.getTargetEntity() instanceof Player))
-        {
-            return;
-        }
+    private static Handler reloadHandler(Path path, Predicate<BlockState> openable) {
+        WorldRules global = new WorldRules(openable);
+        ImmutableMap.Builder<String, WorldRules> builder = ImmutableMap.builder();
 
-        Player player = (Player) event.getTargetEntity();
-        World to = event.getToTransform().getExtent();
+        Config config = Config.must(path);
+        config.asMap().forEach((key, node) -> {
+            String world = key.toString();
+            WorldRules rules = new WorldRules(openable);
+            rules.read(node);
+            builder.put(world, rules);
+        });
 
-        if (!player.hasPermission(world + to.getName().toLowerCase()))
-        {
-            event.setCancelled(true);
-            player.sendMessage(Text.of("You do not have permission to enter that world", TextColors.RED));
-        }
+        Map<String, WorldRules> worlds = builder.build();
+        global = worlds.getOrDefault("*", global);
+        global.write(config.node("*"));
+        config.save();
+
+        return new Handler(global, worlds);
     }
 
-    @Listener (order = Order.LAST)
-    public void changeInventory(ChangeInventoryEvent.Transfer event, @Root Player player)
-    {
-        test(player, inventoryModify, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void launch(LaunchProjectileEvent event, @First Player player)
-    {
-        test(player, launch, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void spawn(SpawnEntityEvent event, @First Player player)
-    {
-        test(player, spawn, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void onEntityInteract(InteractEntityEvent event, @Root Player player)
-    {
-        test(player, interactEntity, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void onBlockInteractPrim(InteractBlockEvent.Primary event, @Root Player player)
-    {
-        test(player, destroy, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void onBlockInteractSec(InteractBlockEvent.Secondary event, @Root Player player)
-    {
-        BlockState block = event.getTargetBlock().getState();
-        if (protectedWorlds.contains(player.getWorld().getUniqueId())) {
-            if (player.hasPermission(build) || player.hasPermission(interactOpenable) && openable.test(block))
-            {
-                // allow player to interact with doors and fence-gates
-                return;
+    private static Predicate<BlockState> findOpenableStates() {
+        ImmutableSet.Builder<BlockState> builder = ImmutableSet.builder();
+        for (BlockState state : Sponge.getRegistry().getAllOf(BlockState.class)) {
+            boolean open = state.getTrait("open").isPresent();
+            boolean hinge = state.getTrait("hinge").isPresent();
+            boolean inWall = state.getTrait("in_wall").isPresent();
+            if (open && (hinge || inWall)) {
+                builder.add(state);
             }
-            event.setCancelled(true);
         }
-    }
-
-    @Listener (order = Order.LAST)
-    public void onBlockBreak(ChangeBlockEvent.Break event, @Root Player player)
-    {
-        test(player, destroy, event);
-    }
-
-    @Listener (order = Order.LAST)
-    public void onBlockPlace(ChangeBlockEvent.Place event, @Root Player player)
-    {
-        test(player, build, event);
-    }
-
-    private void test(Player player, String permission, Cancellable event)
-    {
-        if (protectedWorlds.contains(player.getWorld().getUniqueId()) && !player.hasPermission(permission))
-        {
-            event.setCancelled(true);
-        }
+        Set<BlockState> states = builder.build();
+        return states::contains;
     }
 }

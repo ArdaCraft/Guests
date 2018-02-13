@@ -1,0 +1,38 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '2.0.2'
+    id 'java'
+}
+
+group 'me.dags'
+version '2.0.0-SNAPSHOT'
+def spongeAPI = '5.2.0'
+def spongeChannel = 'SNAPSHOT'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.4'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'http://repo.spongepowered.org/maven'
+    }
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compileOnly "org.spongepowered:spongeapi:${spongeAPI}-$spongeChannel"
+    compile ('com.github.dags-:Config:1.0') {
+        transitive = false
+    }
+}
+
+shadowJar {
+    relocate 'me.dags.config', 'me.dags.guests.config'
+    archiveName = "${baseName}-${version}-SpongeAPI-${spongeAPI}.jar"
+}
+
+jar.dependsOn shadowJar
+jar.enabled = false
