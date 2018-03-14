@@ -29,7 +29,7 @@ public class Handler {
     private final Map<UUID, PlayerData> cache = new HashMap<>();
 
     public Handler() {
-        this(new WorldRules(s -> true), Collections.emptyMap());
+        this(new WorldRules("#none", s -> true), Collections.emptyMap());
     }
 
     public Handler(WorldRules global, Map<String, WorldRules> worlds) {

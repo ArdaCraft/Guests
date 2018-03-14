@@ -40,25 +40,24 @@ public class Guests {
     @Listener
     public void reload(GameReloadEvent event) {
         Object plugin = this;
-        Predicate<BlockState> openable = findOpenableStates();
+        Predicate<BlockState> openable = findOpenableBlocks();
         Task.builder().async().execute(() -> {
-            Handler listener = reloadHandler(config, openable);
+            Handler handler = reloadHandler(config, openable);
             Task.builder().execute(() -> {
-                Sponge.getEventManager().unregisterListeners(handler);
-                Sponge.getEventManager().registerListeners(plugin, handler);
-                handler = listener;
-            });
-        });
+                Sponge.getEventManager().unregisterListeners(Guests.handler);
+                Sponge.getEventManager().registerListeners(plugin, Guests.handler = handler);
+            }).submit(plugin);
+        }).submit(plugin);
     }
 
     private static Handler reloadHandler(Path path, Predicate<BlockState> openable) {
-        WorldRules global = new WorldRules(openable);
+        WorldRules global = new WorldRules("*", openable);
         ImmutableMap.Builder<String, WorldRules> builder = ImmutableMap.builder();
 
         Config config = Config.must(path);
         config.iterate((key, node) -> {
             String world = key.toString();
-            WorldRules rules = new WorldRules(openable);
+            WorldRules rules = new WorldRules(world, openable);
             rules.read(node);
             builder.put(world, rules);
         });
@@ -71,7 +70,7 @@ public class Guests {
         return new Handler(global, worlds);
     }
 
-    private static Predicate<BlockState> findOpenableStates() {
+    private static Predicate<BlockState> findOpenableBlocks() {
         ImmutableSet.Builder<BlockState> builder = ImmutableSet.builder();
         for (BlockState state : Sponge.getRegistry().getAllOf(BlockState.class)) {
             boolean open = state.getTrait("open").isPresent();

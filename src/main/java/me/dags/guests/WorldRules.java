@@ -30,7 +30,9 @@ public class WorldRules {
     private static final String INTERACT_OPENABLE = "guests.interact.openable";
     private static final String INTERACT_INVENTORY = "guests.inventory.modify";
 
+    private final String name;
     private final Predicate<BlockState> openable;
+
     private boolean enterWorld = false;
     private boolean placeBlock = false;
     private boolean breakBlock = false;
@@ -41,7 +43,8 @@ public class WorldRules {
     private boolean interactInventory = false;
     private double velocity2 = 0D;
 
-    public WorldRules(Predicate<BlockState> openable) {
+    public WorldRules(String name, Predicate<BlockState> openable) {
+        this.name = name;
         this.openable = openable;
     }
 
@@ -148,12 +151,18 @@ public class WorldRules {
             return;
         }
 
-        BlockState block = event.getTargetBlock().getState();
-        if (player.hasPermission(BUILD) || player.hasPermission(INTERACT_OPENABLE) && openable.test(block)) {
+        if (openable.test(event.getTargetBlock().getState()) && !player.hasPermission(INTERACT_OPENABLE)) {
+            event.setCancelled(true);
             return;
         }
 
-        event.setCancelled(true);
+        if (placeBlock) {
+            return;
+        }
+
+        if (!player.hasPermission(BUILD)) {
+            event.setCancelled(true);
+        }
     }
 
     public void placeBlock(ChangeBlockEvent.Place event, Player player) {
@@ -168,5 +177,19 @@ public class WorldRules {
         if (!player.hasPermission(permission)) {
             event.setCancelled(true);
         }
+    }
+
+    @Override
+    public String toString() {
+        return name + "{" +
+                "enterWorld=" + enterWorld +
+                ", placeBlock=" + placeBlock +
+                ", breakBlock=" + breakBlock +
+                ", spawnEntity=" + spawnEntity +
+                ", launchProjectile=" + launchProjectile +
+                ", interactEntity=" + interactEntity +
+                ", interactOpenable=" + interactOpenable +
+                ", interactInventory=" + interactInventory +
+                '}';
     }
 }
