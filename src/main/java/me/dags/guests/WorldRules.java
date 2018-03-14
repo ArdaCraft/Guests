@@ -1,5 +1,6 @@
 package me.dags.guests;
 
+import java.util.function.Predicate;
 import me.dags.config.Node;
 import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.entity.living.player.Player;
@@ -14,8 +15,6 @@ import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.world.World;
-
-import java.util.function.Predicate;
 
 /**
  * @author dags <dags@dags.me>
@@ -40,6 +39,7 @@ public class WorldRules {
     private boolean interactEntity = false;
     private boolean interactOpenable = false;
     private boolean interactInventory = false;
+    private double velocity2 = 0D;
 
     public WorldRules(Predicate<BlockState> openable) {
         this.openable = openable;
@@ -54,6 +54,8 @@ public class WorldRules {
         interactEntity = node.get("damage", false);
         interactOpenable = node.get("open", false);
         interactInventory = node.get("inventory", false);
+        double velocity = node.get("velocity", 0D);
+        velocity2 = velocity * velocity;
     }
 
     public void write(Node node) {
@@ -65,6 +67,14 @@ public class WorldRules {
         node.set("damage", interactEntity);
         node.set("open", interactOpenable);
         node.set("inventory", interactInventory);
+        node.set("velocity", Math.sqrt(velocity2));
+    }
+
+    public void move(MoveEntityEvent event, double velocity2) {
+        if (this.velocity2 > 0 && velocity2 > this.velocity2) {
+            event.setCancelled(true);
+            event.setToTransform(event.getFromTransform());
+        }
     }
 
     public void teleport(MoveEntityEvent.Teleport event) {

@@ -2,6 +2,11 @@ package me.dags.guests;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import javax.inject.Inject;
 import me.dags.config.Config;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
@@ -11,12 +16,6 @@ import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.scheduler.Task;
-
-import javax.inject.Inject;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
 
 /**
  * @author dags <dags@dags.me>
@@ -57,7 +56,7 @@ public class Guests {
         ImmutableMap.Builder<String, WorldRules> builder = ImmutableMap.builder();
 
         Config config = Config.must(path);
-        config.asMap().forEach((key, node) -> {
+        config.iterate((key, node) -> {
             String world = key.toString();
             WorldRules rules = new WorldRules(openable);
             rules.read(node);
