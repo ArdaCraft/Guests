@@ -35,6 +35,7 @@ public class Guests {
     @Listener
     public void init(GameInitializationEvent event) {
         reload(null);
+        Sponge.getEventManager().registerListeners(this, new Protections());
     }
 
     @Listener

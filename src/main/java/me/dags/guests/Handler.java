@@ -1,10 +1,7 @@
 package me.dags.guests;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.Order;
@@ -16,7 +13,6 @@ import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.entity.projectile.LaunchProjectileEvent;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.event.item.inventory.ChangeInventoryEvent;
-import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.world.World;
 
 /**
@@ -26,7 +22,6 @@ public class Handler {
 
     private final WorldRules global;
     private final Map<String, WorldRules> worlds;
-    private final Map<UUID, PlayerData> cache = new HashMap<>();
 
     public Handler() {
         this(new WorldRules("#none", s -> true), Collections.emptyMap());
@@ -45,32 +40,9 @@ public class Handler {
         return getRules(world.getName());
     }
 
-    @Listener
-    public void onQuit(ClientConnectionEvent.Disconnect event) {
-        cache.remove(event.getTargetEntity().getUniqueId());
-    }
-
-    @Listener(order = Order.PRE)
-    public void onMove(MoveEntityEvent event) {
-        if (event instanceof MoveEntityEvent.Teleport) {
-            return;
-        }
-
-        Entity entity = event.getTargetEntity();
-        if (entity instanceof Player) {
-            PlayerData data = cache.computeIfAbsent(entity.getUniqueId(), PlayerData.CONSTRUCTOR);
-            double velocity2 = data.getVelocitySquared(entity);
-            getRules(entity.getWorld()).move(event, velocity2);
-        }
-    }
-
     @Listener(order = Order.POST)
     public void onTeleport(MoveEntityEvent.Teleport event) {
         getRules(event.getToTransform().getExtent()).teleport(event);
-        if (!event.isCancelled()) {
-            PlayerData data = cache.computeIfAbsent(event.getTargetEntity().getUniqueId(), PlayerData.CONSTRUCTOR);
-            data.setPosition(event.getToTransform().getPosition());
-        }
     }
 
     @Listener(order = Order.LAST)
