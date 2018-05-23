@@ -36,7 +36,7 @@ public class Guests {
 
     private static Handler handler = new Handler();
     private static boolean debugEnv = true;
-    private static boolean debugUser = true;
+    private static boolean debugUser = false;
 
     private final Path config;
 
