@@ -41,7 +41,6 @@ public class WorldRules {
     private boolean interactEntity = false;
     private boolean interactOpenable = false;
     private boolean interactInventory = false;
-    private double velocity2 = 0D;
 
     public WorldRules(String name, Predicate<BlockState> openable) {
         this.name = name;
@@ -57,8 +56,6 @@ public class WorldRules {
         interactEntity = node.get("damage", false);
         interactOpenable = node.get("open", false);
         interactInventory = node.get("inventory", false);
-        double velocity = node.get("velocity", 0D);
-        velocity2 = velocity * velocity;
     }
 
     public void write(Node node) {
@@ -70,14 +67,6 @@ public class WorldRules {
         node.set("damage", interactEntity);
         node.set("open", interactOpenable);
         node.set("inventory", interactInventory);
-        node.set("velocity", Math.sqrt(velocity2));
-    }
-
-    public void move(MoveEntityEvent event, double velocity2) {
-        if (this.velocity2 > 0 && velocity2 > this.velocity2) {
-            event.setCancelled(true);
-            event.setToTransform(event.getFromTransform());
-        }
     }
 
     public void teleport(MoveEntityEvent.Teleport event) {
@@ -95,6 +84,7 @@ public class WorldRules {
         if (!player.hasPermission(WORLD + to.getName().toLowerCase())) {
             event.setCancelled(true);
             player.sendMessage(Text.of("You do not have permission to enter that world", TextColors.RED));
+            Guests.logUser("Prevented {} from teleporting to {}", player.getName(), event.getToTransform().getLocation());
         }
     }
 
@@ -153,6 +143,7 @@ public class WorldRules {
 
         if (openable.test(event.getTargetBlock().getState()) && !player.hasPermission(INTERACT_OPENABLE)) {
             event.setCancelled(true);
+            Guests.logUser("Prevented {} from interacting with openable at {}", player.getName(), event.getTargetBlock().getPosition());
             return;
         }
 
@@ -162,6 +153,7 @@ public class WorldRules {
 
         if (!player.hasPermission(BUILD)) {
             event.setCancelled(true);
+            Guests.logUser("Prevented {} from building at {}", player.getName(), event.getTargetBlock().getPosition());
         }
     }
 
@@ -176,6 +168,8 @@ public class WorldRules {
     private void test(Player player, String permission, Cancellable event) {
         if (!player.hasPermission(permission)) {
             event.setCancelled(true);
+            String name = event.getClass().getSimpleName();
+            Guests.logUser("Cancelled action {} by {}", name, player.getName());
         }
     }
 

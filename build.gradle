@@ -4,31 +4,35 @@ plugins {
 }
 
 group 'me.dags'
-version '2.1.0-SNAPSHOT'
+version '2.1.1-SNAPSHOT'
 def spongeAPI = '7.1.0'
 def spongeChannel = 'SNAPSHOT'
 
+configurations {
+    shade
+    compile.extendsFrom shade
+}
+
 repositories {
     mavenCentral()
-    maven {
-        url 'http://repo.spongepowered.org/maven'
-    }
-    maven {
-        url 'https://jitpack.io'
-    }
+    maven { url 'http://repo.spongepowered.org/maven' }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compile "org.spongepowered:spongeapi:${spongeAPI}-$spongeChannel"
-    compile ('com.github.dags-:Config:1.0.2') {
+    shade 'com.github.dags-:CommandBus:2.0.3'
+    shade ('com.github.dags-:Config:1.0.2') {
         transitive = false
     }
 }
 
 shadowJar {
-    relocate 'me.dags.config', 'me.dags.guests.config'
+    configurations = [project.configurations.shade]
+    relocate 'me.dags.config.', 'me.dags.guests.config.'
+    relocate 'me.dags.commandbus.', 'me.dags.guests.commandbus.'
     archiveName = "${baseName}-${version}-SpongeAPI-${spongeAPI}.jar"
 }
 
-jar.dependsOn shadowJar
+build.dependsOn shadowJar
 jar.enabled = false

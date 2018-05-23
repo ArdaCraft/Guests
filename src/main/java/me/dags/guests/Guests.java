@@ -7,9 +7,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.inject.Inject;
+import me.dags.commandbus.CommandBus;
+import me.dags.commandbus.annotation.Command;
+import me.dags.commandbus.annotation.Description;
+import me.dags.commandbus.annotation.Permission;
+import me.dags.commandbus.annotation.Src;
+import me.dags.commandbus.fmt.Fmt;
 import me.dags.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.GameReloadEvent;
@@ -23,7 +32,11 @@ import org.spongepowered.api.scheduler.Task;
 @Plugin(name = "Guests", id = "guests", version = "2.0.0", description = "sh")
 public class Guests {
 
+    private static final Logger logger = LoggerFactory.getLogger("GUESTS");
+
     private static Handler handler = new Handler();
+    private static boolean debugEnv = true;
+    private static boolean debugUser = true;
 
     private final Path config;
 
@@ -35,6 +48,7 @@ public class Guests {
     @Listener
     public void init(GameInitializationEvent event) {
         reload(null);
+        CommandBus.create(this).register(this).submit();
         Sponge.getEventManager().registerListeners(this, new Protections());
     }
 
@@ -49,6 +63,22 @@ public class Guests {
                 Sponge.getEventManager().registerListeners(plugin, Guests.handler = handler);
             }).submit(plugin);
         }).submit(plugin);
+    }
+
+    @Command("guests debug env")
+    @Permission("guests.command.debug")
+    @Description("Toggle environment protection logging")
+    public void toggleEnvDebug(@Src CommandSource source) {
+        debugEnv = !debugEnv;
+        Fmt.info("Set env debugging: %s", debugEnv).tell(source);
+    }
+
+    @Command("guests debug users")
+    @Permission("guests.command.debug")
+    @Description("Toggle user protection logging")
+    public void toggleUserDebug(@Src CommandSource source) {
+        debugUser = !debugUser;
+        Fmt.info("Set user debugging: %s", debugUser).tell(source);
     }
 
     private static Handler reloadHandler(Path path, Predicate<BlockState> openable) {
@@ -83,5 +113,17 @@ public class Guests {
         }
         Set<BlockState> states = builder.build();
         return states::contains;
+    }
+
+    static void logEnv(String message, Object... args) {
+        if (debugEnv) {
+            logger.info(message, args);
+        }
+    }
+
+    static void logUser(String message, Object... args) {
+        if (debugUser) {
+            logger.info(message, args);
+        }
     }
 }

@@ -1,8 +1,6 @@
 package me.dags.guests;
 
 import java.util.function.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
@@ -36,13 +34,9 @@ public class Protections {
     // catches any living entity spawns that are not Players or ArmourStands
     private static final Predicate<Entity> onSpawnFilter = e -> !(e instanceof Living) || e instanceof Humanoid || e instanceof ArmorStand;
 
-
-    private static final Logger logger = LoggerFactory.getLogger("ENV_DEBUG");
-    private static boolean debugger = true;
-
     @Listener
     public void onExplosion(ExplosionEvent.Pre event) {
-        debug("cancelled explosion event: {}", event.getCause());
+        Guests.logEnv("cancelled explosion event: {}", event.getCause());
         event.setCancelled(true);
     }
 
@@ -52,13 +46,13 @@ public class Protections {
             event.getTargetWorld().getProperties().setEnabled(false);
             event.setCancelled(true);
             Sponge.getServer().unloadWorld(event.getTargetWorld());
-            debug("unloading world: {}", event.getTargetWorld().getName());
+            Guests.logEnv("unloading world: {}", event.getTargetWorld().getName());
             return;
         }
         Sponge.getScheduler().createTaskBuilder()
                 .delayTicks(1L)
                 .execute(() -> {
-                    debug("setting world properties: {}", event.getTargetWorld().getName());
+                    Guests.logEnv("setting world properties: {}", event.getTargetWorld().getName());
                     WorldProperties properties = event.getTargetWorld().getProperties();
                     properties.setDifficulty(Difficulties.PEACEFUL);
                     properties.setGameRule("doDaylightCycle", "false");
@@ -81,7 +75,7 @@ public class Protections {
     @Listener(order = Order.PRE)
     public void onNotifyTNT(NotifyNeighborBlockEvent event) {
         if (event.getNeighbors().values().stream().anyMatch(tntNotifyFilter)) {
-            debug("cancelled TNT update");
+            Guests.logEnv("cancelled TNT update");
             event.setCancelled(true);
         }
     }
@@ -93,7 +87,7 @@ public class Protections {
         event.setCancelled(true);
         event.getTransactions().forEach(t -> {
             t.setValid(false);
-            debug("cancelled decay: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
+            Guests.logEnv("cancelled decay: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
         });
     }
 
@@ -105,7 +99,7 @@ public class Protections {
             event.setCancelled(true);
             event.getTransactions().forEach(t -> {
                 t.setValid(false);
-                debug("cancelled grow: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
+                Guests.logEnv("cancelled grow: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
             });
         }
     }
@@ -113,19 +107,13 @@ public class Protections {
     @Listener(order = Order.PRE)
     public void onPlace(ChangeBlockEvent.Place event) {
         event.getTransactions().stream().filter(onPlaceFilter).forEach(t -> {
-            debug("cancelled place: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
+            Guests.logEnv("cancelled place: {} -> {}", t.getOriginal().getState().getType(), t.getFinal().getState().getType());
             t.setValid(false);
         });
     }
 
     @Listener(order = Order.PRE)
     public void onSpawn(SpawnEntityEvent event) {
-        event.filterEntities(onSpawnFilter).forEach(e -> debug("cancelled entity spawn: {}", e.getType()));
-    }
-
-    private static void debug(String message, Object... args) {
-        if (debugger) {
-            logger.info(message, args);
-        }
+        event.filterEntities(onSpawnFilter).forEach(e -> Guests.logEnv("cancelled entity spawn: {}", e.getType()));
     }
 }
