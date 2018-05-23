@@ -18,6 +18,7 @@ import org.spongepowered.api.event.block.NotifyNeighborBlockEvent;
 import org.spongepowered.api.event.entity.SpawnEntityEvent;
 import org.spongepowered.api.event.world.ExplosionEvent;
 import org.spongepowered.api.event.world.LoadWorldEvent;
+import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.world.DimensionTypes;
 import org.spongepowered.api.world.difficulty.Difficulties;
 import org.spongepowered.api.world.storage.WorldProperties;
@@ -34,6 +35,12 @@ public class Protections {
     // catches any living entity spawns that are not Players or ArmourStands
     private static final Predicate<Entity> onSpawnFilter = e -> !(e instanceof Living) || e instanceof Humanoid || e instanceof ArmorStand;
 
+    private final Object plugin;
+
+    public Protections(Object plugin) {
+        this.plugin = plugin;
+    }
+
     @Listener
     public void onExplosion(ExplosionEvent.Pre event) {
         Guests.logEnv("cancelled explosion event: {}", event.getCause());
@@ -49,7 +56,7 @@ public class Protections {
             Guests.logEnv("unloading world: {}", event.getTargetWorld().getName());
             return;
         }
-        Sponge.getScheduler().createTaskBuilder()
+        Task.builder()
                 .delayTicks(1L)
                 .execute(() -> {
                     Guests.logEnv("setting world properties: {}", event.getTargetWorld().getName());
@@ -68,7 +75,7 @@ public class Protections {
                     properties.setGameRule("spawnRadius", "0");
                     properties.setGameRule("disableElytraMovementCheck", "true");
                 })
-                .submit(this);
+                .submit(plugin);
 
     }
 

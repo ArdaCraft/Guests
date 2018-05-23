@@ -49,7 +49,7 @@ public class Guests {
     public void init(GameInitializationEvent event) {
         reload(null);
         CommandBus.create(this).register(this).submit();
-        Sponge.getEventManager().registerListeners(this, new Protections());
+        Sponge.getEventManager().registerListeners(this, new Protections(this));
     }
 
     @Listener
