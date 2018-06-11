@@ -137,11 +137,15 @@ public class WorldRules {
     }
 
     public void interactBlockSec(InteractBlockEvent.Secondary event, Player player) {
-        if (interactOpenable) {
-            return;
-        }
+        if (openable.test(event.getTargetBlock().getState())) {
+            if (interactOpenable) {
+                return;
+            }
 
-        if (openable.test(event.getTargetBlock().getState()) && !player.hasPermission(INTERACT_OPENABLE)) {
+            if (player.hasPermission(INTERACT_OPENABLE)) {
+                return;
+            }
+
             event.setCancelled(true);
             Guests.logUser("Prevented {} from interacting with openable at {}", player.getName(), event.getTargetBlock().getPosition());
             return;

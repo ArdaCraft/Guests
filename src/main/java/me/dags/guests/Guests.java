@@ -29,7 +29,7 @@ import org.spongepowered.api.scheduler.Task;
 /**
  * @author dags <dags@dags.me>
  */
-@Plugin(name = "Guests", id = "guests", version = "2.0.0", description = "sh")
+@Plugin(name = "Guests", id = "guests", version = "2.1.2", description = ".")
 public class Guests {
 
     private static final Logger logger = LoggerFactory.getLogger("GUESTS");
