@@ -5,8 +5,7 @@ pipeline {
       steps {
         sh '''
 
-chmod +x gradlew
-\\ ./gradlew --refresh-dependencies -s clean setupDecompWorkspace'''
+./gradlew --refresh-dependencies -s clean setupDecompWorkspace'''
       }
     }
 
