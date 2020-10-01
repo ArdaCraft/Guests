@@ -3,7 +3,10 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        sh './gradlew --refresh-dependencies -s clean setupDecompWorkspace'
+        sh '''
+
+chmod +x gradlew
+\\ ./gradlew --refresh-dependencies -s clean setupDecompWorkspace'''
       }
     }
 
