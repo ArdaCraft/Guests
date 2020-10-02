@@ -10,8 +10,13 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './gradlew --refresh-dependencies -s  clean build :uploadArchives'
+                sh './gradlew --refresh-dependencies -s  clean build'
             }
+        }
+    }
+    post {
+        always {
+            archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true
         }
     }
 }
