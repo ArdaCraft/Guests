@@ -5,4 +5,4 @@ jdk:
   - openjdk8
   - oraclejdk8
 install: true
-script: gradle build
+script: gradlew build
