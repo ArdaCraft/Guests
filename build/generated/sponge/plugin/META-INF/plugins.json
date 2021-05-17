@@ -1,0 +1,35 @@
+{
+    "plugins": [
+        {
+            "loader": "java_plain",
+            "id": "guests",
+            "name": "Guests",
+            "version": "2.2-SNAPSHOT",
+            "main-class": "me.ardacraft.guests.Guests",
+            "description": "Basic building restrictions ",
+            "links": {
+                "homepage": "https://ardacraft.me",
+                "source": "https://github.com/ArdaCraft/Guests",
+                "issues": "https://github.com/ArdaCraft/Guests/issues"
+            },
+            "contributors": [
+                {
+                    "name": "Dags",
+                    "description": "Original author and developer"
+                },
+                {
+                    "name": "Freshmilkymilk",
+                    "description": "Developer"
+                }
+            ],
+            "dependencies": [
+                {
+                    "id": "spongeapi",
+                    "version": "7.3.0",
+                    "load-order": "AFTER",
+                    "optional": false
+                }
+            ]
+        }
+    ]
+}
